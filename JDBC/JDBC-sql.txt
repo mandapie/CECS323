@@ -1,0 +1,52 @@
+CREATE TABLE writinggroup
+ (
+    group_name VARCHAR(45) NOT NULL,
+    head_writer VARCHAR(45) NOT NULL,
+    year_formed VARCHAR(15),
+    subject VARCHAR(15),
+    CONSTRAINT pk_writinggroup PRIMARY KEY (group_name)
+ );
+
+CREATE TABLE book
+(
+    group_name VARCHAR(45) NOT NULL,
+    book_title VARCHAR(30) NOT NULL,
+    publisher_name VARCHAR(30) NOT NULL,
+    year_published VARCHAR(15),
+    number_pages VARCHAR(5),
+    CONSTRAINT pk_book PRIMARY KEY (group_name, book_title)
+);
+
+CREATE TABLE publisher
+(
+    publisher_name VARCHAR(30) NOT NULL,
+    publisher_address VARCHAR(45),
+    publisher_phone VARCHAR(10),
+    publisher_email VARCHAR(30),
+    CONSTRAINT pk_publisher PRIMARY KEY (publisher_name)
+);
+
+ALTER TABLE book
+          ADD CONSTRAINT book_writinggroup_fk
+          FOREIGN KEY (group_name)
+          REFERENCES writinggroup (group_name);
+
+ALTER TABLE book
+          ADD CONSTRAINT book_publisher_fk
+          FOREIGN KEY (publisher_name)
+          REFERENCES publisher (publisher_name);
+
+INSERT INTO writinggroup(group_name, head_writer, year_formed, subject)
+VALUES ('The Secret Society of Amanda', 'Amanda Pan', '2000', 'Beauty'),
+('The Secret Society of Adnama', 'Brian Fann', '2001', 'Studies'),
+('Housewives of Atlanta', 'Sarah Hopkins', '1995', 'Fashion');
+
+INSERT INTO publisher (publisher_name, publisher_address, publisher_phone, publisher_email)
+VALUES ('Ankhor Co.', '144 Bellflower Blvd.', '6262332123', 'contact@ankhor.com'),
+('Fann Co.', '666 Bellflower Blvd.', '3234332323', 'contact@Fann.com'),
+('Regal Printing Firm', '455 South St.', '5123235555', 'regalprintingfirm@gmail.com');
+
+INSERT INTO book (group_name, book_title, publisher_name, year_published, number_pages)
+VALUES ('The Secret Society of Amanda', 'Make-up Au Revoir', 'Ankhor Co.', '2010', '245'),
+('The Secret Society of Adnama', 'Coffee Break?', 'Fann Co.', '2008', '500'),
+('Housewives of Atlanta', 'Georgia Faux 2015', 'Regal Printing Firm', '2015', '120');

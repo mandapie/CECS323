@@ -1,0 +1,422 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package cecs323jdbc;
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+import java.sql.*;
+import java.util.Scanner;
+
+/**
+ *
+ * @author Brian and Amanda
+ */
+public class CECS323JDBC {
+    //  Database credentials
+    static String USER;
+    static String PASS;
+    static String DBNAME;
+    //This is the specification for the printout that I'm doing:
+    //each % denotes the start of a new field.
+    //The - denotes left justification.
+    //The number indicates how wide to make the field.
+    //The "s" denotes that it's a string.  All of our output in this test are 
+    //strings, but that won't always be the case.
+    static final String displayFormat="%-5s%-15s%-15s%-15s\n";
+// JDBC driver name and database URL
+    static final String JDBC_DRIVER = "org.apache.derby.jdbc.ClientDriver";
+    static String DB_URL = "jdbc:derby://localhost:1527/";
+//            + "testdb;user=";
+/**
+ * Takes the input string and outputs "N/A" if the string is empty or null.
+ * @param input The string to be mapped.
+ * @return  Either the input string or "N/A" as appropriate.
+ */
+    public static String dispNull (String input) {
+        //because of short circuiting, if it's null, it never checks the length.
+        if (input == null || input.length() == 0)
+            return "N/A";
+        else
+            return input;
+    }
+    
+    public static void main(String[] args) {
+        //Prompt the user for the database name, and the credentials.
+        //If your database has no credentials, you can update this code to 
+        //remove that from the connection string.
+        Scanner in = new Scanner(System.in);
+        System.out.print("Name of the database (not the user account): ");
+        DBNAME = in.nextLine();
+        System.out.print("Database user name: ");
+        USER = in.nextLine();
+        System.out.print("Database password: ");
+        PASS = in.nextLine();
+        //Constructing the database URL connection string
+        DB_URL = DB_URL + DBNAME + ";user="+ USER + ";password=" + PASS;
+        Connection conn = null; //initialize the connection
+        Statement stmt = null;  //initialize the statement that we're using
+        try {
+            //STEP 2: Register JDBC driver
+            Class.forName("org.apache.derby.jdbc.ClientDriver");
+            //STEP 3: Open a connection
+            System.out.println("Connecting to database...");
+            conn = DriverManager.getConnection(DB_URL);
+            //STEP 4: Execute a query
+            System.out.println("Creating statement...");
+            stmt = conn.createStatement();
+            boolean querying = true;
+            String sql;
+            ResultSet rs;
+            try (Scanner scan = new Scanner(System.in)) {
+                while(querying) {
+                    //Menu
+                    System.out.println("Menu:\n"
+                            + "1. List all writing groups\n"
+                            + "2. List all the data for a group\n"
+                            + "3. List all publishers\n"
+                            + "4. List all the data for a publisher\n"
+                            + "5. List all book titles\n"
+                            + "6. List all the data for a book\n"
+                            + "7. Insert a new book\n"
+                            + "8. Insert a new publisher and update all books from a publisher to be published by the new one\n"
+                            + "9. Remove a book\n"
+                            + "0. Quit\n");
+                    String input = scan.nextLine(); //Get the input
+                    //Try to get the value
+                    //may throw exception if not a number
+                    int answer;
+                    try { answer = Integer.valueOf(input); }
+                    catch(Exception e) { answer = -1; }
+                    switch(answer) {
+                        case 0:
+                            querying = false;
+                            break;
+                        case 1:
+                            sql = "SELECT group_name FROM writinggroup";
+                            try{
+                                rs = stmt.executeQuery(sql);
+                                System.out.println("Group Names:");
+                                while(rs.next()){
+                                    //Retrieve by column name
+                                    String gname = rs.getString("group_name");
+                                    //Display values
+                                    System.out.println(gname);
+                                }
+                                rs.close();
+                            }
+                            catch(Exception e) {
+                                //Handle errors for Class.forName
+                                //Inform user of error
+                                System.out.println("Error! Could not get result from the Database");
+                            }
+                            break;
+                        case 2:
+                            System.out.println("Please enter the group name you would like to view");
+                            input = scan.nextLine(); //Get the group name
+                            sql = "SELECT * FROM writinggroup WHERE UPPER(group_name) LIKE UPPER('%" + input + "%')";
+                            rs = stmt.executeQuery(sql);
+                            if(rs.next()) {
+                                //Retrieve by column name
+                                String gname = rs.getString("group_name");
+                                String writer = rs.getString("head_writer");
+                                String year = rs.getString("year_formed");
+                                String subject = rs.getString("subject");
+                                //Display values
+                                System.out.println("Group Name: " + gname + "\n" + "Head Writer: " + writer + "\n" + "Year Formed: " + year + "\n" + "Subject: " + subject);
+                            }
+                            else { System.out.println("That Group Name does not exist..."); }
+                            rs.close();
+                            break;
+                        case 3:
+                            sql = "SELECT publisher_name FROM publisher";
+                            try{ 
+                                rs = stmt.executeQuery(sql);
+                                System.out.println("Publishers:");
+                                while(rs.next()){
+                                    //Retrieve by column name
+                                    String pname = rs.getString("publisher_name");
+                                    //Display values
+                                    System.out.println(pname);
+                                }
+                                rs.close();
+                            }
+                            catch(Exception e) { System.out.println("Error! Could not get result from the Database"); }
+                            break;
+                        case 4:
+                            System.out.println("Please enter the publisher you would like to view");
+                            input = scan.nextLine(); //Get the publisher name
+                            sql = "SELECT * FROM publisher WHERE UPPER(publisher_name) LIKE UPPER('%" + input + "%')";
+                            rs = stmt.executeQuery(sql);
+                            if(rs.next()) {
+                                //Retrieve by column name
+                                String pname = rs.getString("publisher_name");
+                                String address = rs.getString("publisher_address");
+                                String phone = rs.getString("publisher_phone");
+                                String email = rs.getString("publisher_email");
+                                //Display values
+                                System.out.println("Publisher Name: " + pname + "\n"
+                                            + "Publisher Address: " + address + "\n"
+                                            + "Publisher Phone: " + phone + "\n"
+                                            + "Publisher Email: " + email);
+                            }
+                            else { System.out.println("That Group Name does not exist..."); }
+                            rs.close();
+                        case 5:
+                            sql = "SELECT book_title FROM book";
+                            try{
+                                rs = stmt.executeQuery(sql);
+                                System.out.println("Books:");
+                                while(rs.next()){
+                                    //Retrieve by column name
+                                    String bname = rs.getString("book_title");
+                                    //Display values
+                                    System.out.println(bname);
+                                }
+                                rs.close();
+                            }
+                            catch(Exception e) { System.out.println("Error! Could not get result from the Database"); }
+                            break;
+                        case 6:
+                            System.out.println("Please enter the book you would like to view");
+                            input = scan.nextLine(); //Get the book name
+                            sql = "SELECT * FROM book WHERE UPPER(book_title) LIKE UPPER('%" + input + "%')";
+                            rs = stmt.executeQuery(sql);
+                            if(rs.next()) {
+                                //Retrieve by column name
+                                String gname = rs.getString("group_name");
+                                String title = rs.getString("book_title");
+                                String pname = rs.getString("publisher_name");
+                                String pyear = rs.getString("year_published");
+                                String pages = rs.getString("number_pages");
+                                //Display values
+                                System.out.println("Group Name: " + gname + "\n"
+                                            + "Book Title: " + title + "\n"
+                                            + "Publisher Name: " + pname + "\n"
+                                            + "Year Published: " + pyear + "\n"
+                                            + "Number of Pages: " + pages);
+                            }
+                            else { System.out.println("That book does not exist..."); }
+                            rs.close();
+                            break;
+                        case 7:
+                            String gname = "";
+                            String title = "";
+                            String pname = "";
+                            String pyear = "";
+                            String pages = "";
+                            System.out.println("Please enter a title for the book");
+                            title = scan.nextLine();
+                            boolean getInput = true;
+                            while(getInput) {
+                                System.out.println("Please enter a Group Name from the following below:");
+                                sql = "SELECT group_name FROM writinggroup";
+                                //try to get result set for the Group Name
+                                try {
+                                    rs = stmt.executeQuery(sql);
+                                    //print result set for the Group Name
+                                    System.out.println("\nGroup Names:");
+                                    while(rs.next()){
+                                        //Retrieve by column name
+                                        String groups = rs.getString("group_name");
+                                        //Display values
+                                        System.out.println(groups);
+                                    }
+                                    rs.close();
+                                }
+                                catch(Exception e) {
+                                    //Handle errors for Class.forName
+                                    e.printStackTrace();
+                                    //Inform user of error
+                                    System.out.println("Error! Could not get result from the Database\n");
+                                }
+                                System.out.println("\nPlease enter a name for the group:");
+                                gname = scan.nextLine();
+                                //Check if Group Name is valid
+                                String sqlCheck = "SELECT group_name FROM writinggroup WHERE UPPER(group_name) LIKE UPPER('%" + gname + "%')";
+                                try {
+                                    ResultSet rsCheck = stmt.executeQuery(sqlCheck);
+                                    if(rsCheck.next()) {
+                                    getInput = false; //group name exist
+                                    }
+                                    else {
+                                        //Not a valid group
+                                        System.out.println("Group Name does not exist, please select an available group\n");
+                                    }
+                                    rsCheck.close();
+                                }
+                                catch(Exception e) {
+                                    //Handle errors for Class.forName
+                                    e.printStackTrace();
+                                    //Inform user of error
+                                    System.out.println("Error! Could not get result from the Database\n");
+                                }
+                            }
+                            getInput = true;
+                            while(getInput) {
+                                System.out.println("Please enter a Publisher from the following below:");
+                                sql = "SELECT publisher_name FROM publisher";
+                                //try to get result set for the Publisher
+                                try {
+                                    rs = stmt.executeQuery(sql);
+                                    //print result set for the Publisher Name
+                                    System.out.println("\nPublishers:");
+                                    while(rs.next()){
+                                        //Retrieve by column name
+                                        String publishers = rs.getString("publisher_name");
+                                        //Display values
+                                        System.out.println(publishers);
+                                    }
+                                    rs.close();
+                                }
+                                catch(Exception e) {
+                                    //Handle errors for Class.forName
+                                    e.printStackTrace();
+                                    //Inform user of error
+                                    System.out.println("Error! Could not get result from the Database\n");
+                                    break;
+                                }
+                                System.out.println("\nPlease enter a name for the publisher:");
+                                pname = scan.nextLine();
+                                //Check if Publisher Name is valid
+                                String sqlCheck = "SELECT publisher_name FROM publisher WHERE UPPER(publisher_name) LIKE UPPER('%" + pname + "%')";
+                                try {
+                                    ResultSet rsCheck = stmt.executeQuery(sqlCheck);
+                                    if(rsCheck.next()) {
+                                    getInput = false; //publisher name exist
+                                    }
+                                    else { System.out.println("Publisher does not exist, please select an available publisher\n"); }
+                                    rsCheck.close();
+                                }
+                                catch(Exception e) {
+                                    //Handle errors for Class.forName
+                                    e.printStackTrace();
+                                    //Inform user of error
+                                    System.out.println("Error! Could not get result from the Database\n");
+                                }
+                            }
+                            System.out.println("Please enter the year it is published:");
+                            pyear = scan.nextLine();
+                            System.out.println("Please enter number of pages:");
+                            pages = scan.nextLine();
+                            //Create the sql
+                            sql = "INSERT INTO book VALUES " + "('" + gname + "', " + "'" + title + "', " + "'" + pname + "', " + "'" + pyear + "', " + "'" + pages + "')";
+                            try{
+                                stmt.execute(sql); //Execute the sql
+                                System.out.println("Transferred successfully"); //Show user transfer success!
+                            }
+                            catch(SQLException e) {
+                                System.out.println("Your Query has failed to run. Please try again.");
+                            }
+                            break;
+                        case 8:
+                            String publisher = "";
+                            String address = "";
+                            String phone = "";
+                            String email = "";
+                            System.out.println("Please enter the name of the publisher:");
+                            publisher = scan.nextLine();
+                            System.out.println("Please enter the address of the publisher:");
+                            address = scan.nextLine();
+                            System.out.println("Please enter the phone of the publisher:");
+                            phone = scan.nextLine();
+                            System.out.println("Please enter the email of the publisher:");
+                            email = scan.nextLine();
+                            //Create the sql
+                            sql = "INSERT INTO publisher VALUES " + "('" + publisher + "', " + "'" + address + "', " + "'" + phone + "', " + "'" + email + "')";
+                            stmt.execute(sql); //Execute the sql
+                            System.out.println("Inserted new publisher!"); //Show user inserted new publisher
+                            //transfer book data to the new publisher
+                            boolean getBook = true;
+                            String bookTitle;
+                            while(getBook) {
+                                System.out.println("Please enter the book you wish to transfer to the new publisher based on the following below:");
+                                String sqlBook = "SELECT book_title FROM book";
+                                //try to get result set for Book
+                                try {
+                                    rs = stmt.executeQuery(sqlBook);
+                                    //print result set for the Book Title
+                                    System.out.println("\nBooks:");
+                                    while(rs.next()){
+                                        //Retrieve by column name
+                                        String books = rs.getString("book_title");
+                                        //Display values
+                                        System.out.println(books);
+                                    }
+                                    rs.close();
+                                }
+                                catch(Exception e) {
+                                    //Handle errors for Class.forName
+                                    e.printStackTrace();
+                                    //Inform user of error
+                                    System.out.println("Error! Could not get result from the Database\n");
+                                }
+                                System.out.println("\nPlease enter a title for the book:");
+                                bookTitle = scan.nextLine();
+                                //Check if Book Title is valid
+                                String sqlCheck = "SELECT book_title FROM book WHERE UPPER(book_title) LIKE UPPER('%" + bookTitle + "%')";
+                                try (ResultSet rsCheck = stmt.executeQuery(sqlCheck)) {
+                                    if(rsCheck.next()) {
+                                        System.out.println("Transferred successfully"); //Show user transfer success!
+                                        getBook = false; //publisher name exist
+                                    }
+                                    else { System.out.println("Book Title does not exist, please select an available publisher\n"); }
+                                    rsCheck.close();
+                                }
+                                catch(Exception e) {
+                                    //Handle errors for Class.forName
+                                    e.printStackTrace();
+                                    //Inform user of error
+                                    System.out.println("Error! Could not get result from the Database\n");
+                                }
+                            }
+                            break;
+                        case 9:
+                            System.out.println("Please enter the book you would like to remove");
+                            input = scan.nextLine();
+                            //Query the DB
+                            sql = "SELECT * FROM book WHERE UPPER(book_title) LIKE UPPER('%" + input + "%')";
+                            rs = stmt.executeQuery(sql);
+                            if(rs.next()) {
+                                //Create the sql to delete
+                                String sqlDel = "DELETE FROM book WHERE UPPER(book_title) LIKE UPPER('%" + input + "%')";
+                                //Execute the sql
+                                stmt.execute(sqlDel);
+                                System.out.println("book deleted");
+                            }
+                            else { System.out.println("That book does not exist..."); }
+                            rs.close();
+                            break;
+                        default:
+                            System.out.println("Invalid input.");
+                        }
+                    System.out.println();
+                }//end while loop
+            }//end try menu
+            catch(Exception e) {
+                //Handle errors for Class.forName
+                e.printStackTrace();
+                //Inform user of error
+                System.out.println("Error! Scanner could not be created");
+            }//end catch menu
+            //STEP 6: Clean-up environment
+            stmt.close();
+            conn.close();
+        }//end try main
+        catch (SQLException se) { se.printStackTrace(); } //Handle errors for JDBC
+        catch (Exception e) { e.printStackTrace(); } //Handle errors for Class.forName
+        finally {
+            //finally block used to close resources
+            try { if (stmt != null) { stmt.close(); } }
+            catch (SQLException se2) { }// nothing we can do
+            try { if (conn != null) { conn.close(); } }
+            catch (SQLException se) { se.printStackTrace(); }
+        }//end finally try
+        System.out.println("Goodbye!");
+    }//end main
+}//end project
